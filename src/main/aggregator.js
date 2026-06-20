@@ -1,6 +1,7 @@
 const { createAdapter } = require('./adapters');
 
 const DEFAULT_POLL_INTERVAL = 30000;
+const DEFAULT_SOURCE_TIMEOUT = 15000;
 
 class Aggregator {
   constructor(db, app) {
@@ -14,6 +15,27 @@ class Aggregator {
     this.isRefreshing = false;
     this.sourceStatus = new Map();
     this.pollInterval = DEFAULT_POLL_INTERVAL;
+  }
+
+  getSourceTimeout(source) {
+    const configured = source.config && source.config.timeout;
+    if (typeof configured === 'number' && configured > 0) {
+      return configured;
+    }
+    return DEFAULT_SOURCE_TIMEOUT;
+  }
+
+  fetchWithTimeout(adapter, source) {
+    const timeout = this.getSourceTimeout(source);
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`数据源超时 (${timeout}ms)`));
+      }, timeout);
+      adapter.fetchTasks().then(
+        (result) => { clearTimeout(timer); resolve(result); },
+        (err) => { clearTimeout(timer); reject(err); }
+      );
+    });
   }
 
   start() {
@@ -55,39 +77,50 @@ class Aggregator {
     this.isRefreshing = true;
 
     try {
-      const allTasks = [];
-      const sourceStatuses = [];
-
-      for (const source of this.sources) {
+      const fetchPromises = this.sources.map((source) => {
         const adapter = this.adapters.get(source.id);
-        if (!adapter) continue;
+        if (!adapter) return null;
 
         const statusEntry = {
           sourceId: source.id,
           sourceName: source.name,
           sourceType: source.type,
+          timeout: this.getSourceTimeout(source),
           lastAttempt: new Date().toISOString(),
           success: false,
           error: null,
           taskCount: 0
         };
 
-        try {
-          const tasks = await adapter.fetchTasks();
-          for (const task of tasks) {
-            task.sourceId = source.id;
-            task.sourceName = source.name;
-          }
-          allTasks.push(...tasks);
-          statusEntry.success = true;
-          statusEntry.taskCount = tasks.length;
-        } catch (e) {
-          console.error(`Error fetching from ${source.name}:`, e.message);
-          statusEntry.error = e.message;
-        }
+        return this.fetchWithTimeout(adapter, source)
+          .then((tasks) => {
+            for (const task of tasks) {
+              task.sourceId = source.id;
+              task.sourceName = source.name;
+            }
+            statusEntry.success = true;
+            statusEntry.taskCount = tasks.length;
+            return { statusEntry, tasks };
+          })
+          .catch((e) => {
+            console.error(`Error fetching from ${source.name}:`, e.message);
+            statusEntry.error = e.message;
+            return { statusEntry, tasks: [] };
+          });
+      }).filter(Boolean);
 
-        sourceStatuses.push(statusEntry);
-        this.sourceStatus.set(source.id, statusEntry);
+      const results = await Promise.allSettled(fetchPromises);
+
+      const allTasks = [];
+      const sourceStatuses = [];
+
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          const { statusEntry, tasks } = result.value;
+          allTasks.push(...tasks);
+          sourceStatuses.push(statusEntry);
+          this.sourceStatus.set(statusEntry.sourceId, statusEntry);
+        }
       }
 
       this.tasks = allTasks;

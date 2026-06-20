@@ -16,7 +16,8 @@ class DashboardRenderer {
           ]},
           { name: 'username', label: '用户名', type: 'text', dependsOn: { authType: 'basic' } },
           { name: 'password', label: '密码', type: 'password', dependsOn: { authType: 'basic' } },
-          { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } }
+          { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
+          { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
         ]
       },
       {
@@ -32,7 +33,8 @@ class DashboardRenderer {
           ]},
           { name: 'username', label: '用户名', type: 'text', dependsOn: { authType: 'basic' } },
           { name: 'password', label: '密码 / API Token', type: 'password', dependsOn: { authType: 'basic' } },
-          { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } }
+          { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
+          { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
         ]
       },
       {
@@ -53,7 +55,8 @@ class DashboardRenderer {
           { name: 'password', label: '密码', type: 'password', dependsOn: { authType: 'basic' } },
           { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
           { name: 'apiKey', label: 'API Key', type: 'password', dependsOn: { authType: 'apikey' } },
-          { name: 'apiKeyHeader', label: 'API Key Header', type: 'text', placeholder: 'X-API-Key', dependsOn: { authType: 'apikey' } }
+          { name: 'apiKeyHeader', label: 'API Key Header', type: 'text', placeholder: 'X-API-Key', dependsOn: { authType: 'apikey' } },
+          { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
         ]
       }
     ];
@@ -205,6 +208,7 @@ class DashboardRenderer {
             <span class="status-indicator ${s.success ? 'ok' : 'error'}"></span>
             <span>${s.success ? `已获取 ${s.taskCount} 个任务` : `连接失败: ${this.escapeHtml(s.error || '未知错误')}`}</span>
           </div>
+          ${s.timeout ? `<div class="source-status" style="margin-top:4px;font-size:11px;color:var(--text-muted)">超时: ${s.timeout}ms</div>` : ''}
           <div class="source-stats">
             <div class="source-stat">
               <div class="source-stat-label">运行中</div>
@@ -433,6 +437,9 @@ class DashboardRenderer {
       const name = el.dataset.field;
       if (el.type === 'checkbox') {
         config[name] = el.checked;
+      } else if (el.type === 'number') {
+        const val = parseInt(el.value, 10);
+        config[name] = isNaN(val) ? '' : val;
       } else {
         config[name] = el.value;
       }

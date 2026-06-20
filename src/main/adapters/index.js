@@ -31,7 +31,8 @@ function getAvailableTypes() {
         ]},
         { name: 'username', label: '用户名', type: 'text', dependsOn: { authType: 'basic' } },
         { name: 'password', label: '密码', type: 'password', dependsOn: { authType: 'basic' } },
-        { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } }
+        { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
+        { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
       ]
     },
     {
@@ -47,7 +48,8 @@ function getAvailableTypes() {
         ]},
         { name: 'username', label: '用户名', type: 'text', dependsOn: { authType: 'basic' } },
         { name: 'password', label: '密码 / API Token', type: 'password', dependsOn: { authType: 'basic' } },
-        { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } }
+        { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
+        { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
       ]
     },
     {
@@ -68,7 +70,8 @@ function getAvailableTypes() {
         { name: 'password', label: '密码', type: 'password', dependsOn: { authType: 'basic' } },
         { name: 'token', label: 'Token', type: 'password', dependsOn: { authType: 'bearer' } },
         { name: 'apiKey', label: 'API Key', type: 'password', dependsOn: { authType: 'apikey' } },
-        { name: 'apiKeyHeader', label: 'API Key Header', type: 'text', placeholder: 'X-API-Key', dependsOn: { authType: 'apikey' } }
+        { name: 'apiKeyHeader', label: 'API Key Header', type: 'text', placeholder: 'X-API-Key', dependsOn: { authType: 'apikey' } },
+        { name: 'timeout', label: '超时时间 (ms)', type: 'number', placeholder: '15000' }
       ]
     }
   ];
