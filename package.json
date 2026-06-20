@@ -1,0 +1,25 @@
+{
+  "name": "distributed-task-dashboard",
+  "version": "1.0.0",
+  "description": "分布式任务进度聚合看板 - 实时监控Airflow、Jenkins、自定义RPC等多源任务执行进度",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --enable-logging"
+  },
+  "keywords": [
+    "electron",
+    "dashboard",
+    "task-monitoring",
+    "airflow",
+    "jenkins"
+  ],
+  "author": "Task Dashboard Team",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.2.2"
+  }
+}

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>分布式任务进度聚合看板</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <h1 class="app-title">
+        <span class="logo-dot"></span>
+        分布式任务进度聚合看板
+      </h1>
+      <span id="refreshStatus" class="refresh-status idle">等待刷新</span>
+    </div>
+    <div class="header-right">
+      <button id="refreshBtn" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+        立即刷新
+      </button>
+      <button id="configBtn" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+        数据源配置
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="stats-section">
+      <div class="stat-card total">
+        <div class="stat-label">总任务数</div>
+        <div class="stat-value" id="statTotal">0</div>
+      </div>
+      <div class="stat-card running">
+        <div class="stat-label">运行中</div>
+        <div class="stat-value" id="statRunning">0</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-label">成功</div>
+        <div class="stat-value" id="statSuccess">0</div>
+      </div>
+      <div class="stat-card failed">
+        <div class="stat-label">失败</div>
+        <div class="stat-value" id="statFailed">0</div>
+      </div>
+      <div class="stat-card pending">
+        <div class="stat-label">等待中</div>
+        <div class="stat-value" id="statPending">0</div>
+      </div>
+      <div class="stat-card warning">
+        <div class="stat-label">警告</div>
+        <div class="stat-value" id="statWarning">0</div>
+      </div>
+    </section>
+
+    <section class="sources-section">
+      <h2 class="section-title">数据源状态</h2>
+      <div id="sourcesList" class="sources-list">
+        <div class="empty-state">暂无数据源，请点击右上角"数据源配置"添加</div>
+      </div>
+    </section>
+
+    <section class="tasks-section">
+      <div class="section-header">
+        <h2 class="section-title">任务列表</h2>
+        <div class="filter-bar">
+          <select id="filterState" class="form-input">
+            <option value="all">全部状态</option>
+            <option value="running">运行中</option>
+            <option value="pending">等待中</option>
+            <option value="success">成功</option>
+            <option value="failed">失败</option>
+            <option value="warning">警告</option>
+          </select>
+          <select id="filterSource" class="form-input">
+            <option value="all">全部数据源</option>
+          </select>
+          <input type="text" id="searchInput" class="form-input" placeholder="搜索任务名...">
+        </div>
+      </div>
+      <div id="tasksList" class="tasks-list">
+        <div class="empty-state">暂无任务数据</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="configModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>数据源管理</h2>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="config-layout">
+          <div class="sources-panel">
+            <div class="panel-header">
+              <h3>已配置数据源</h3>
+              <button class="btn btn-primary btn-sm" id="addSourceBtn">+ 新增</button>
+            </div>
+            <div id="configSourcesList" class="config-sources-list"></div>
+          </div>
+          <div class="form-panel">
+            <div class="panel-header">
+              <h3 id="formTitle">新增数据源</h3>
+            </div>
+            <form id="sourceForm" class="source-form">
+              <input type="hidden" id="sourceId">
+              <div class="form-group">
+                <label>名称</label>
+                <input type="text" id="sourceName" class="form-input" required placeholder="例如：生产Airflow">
+              </div>
+              <div class="form-group">
+                <label>类型</label>
+                <select id="sourceType" class="form-input" required>
+                  <option value="">请选择类型</option>
+                </select>
+              </div>
+              <div id="dynamicFields"></div>
+              <div class="form-group checkbox-group">
+                <label>
+                  <input type="checkbox" id="sourceEnabled" checked>
+                  启用此数据源
+                </label>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-secondary" id="testConnectionBtn">测试连接</button>
+                <span id="testResult" class="test-result"></span>
+                <div class="form-actions-right">
+                  <button type="button" class="btn btn-secondary" id="resetFormBtn">重置</button>
+                  <button type="submit" class="btn btn-primary" id="saveSourceBtn">保存</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
