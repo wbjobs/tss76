@@ -4,9 +4,10 @@ const DEFAULT_POLL_INTERVAL = 30000;
 const DEFAULT_SOURCE_TIMEOUT = 15000;
 
 class Aggregator {
-  constructor(db, app) {
+  constructor(db, app, alertManager = null) {
     this.db = db;
     this.app = app;
+    this.alertManager = alertManager;
     this.sources = [];
     this.adapters = new Map();
     this.tasks = [];
@@ -135,6 +136,14 @@ class Aggregator {
       }
 
       this.app.broadcast('data-updated', aggregated);
+
+      if (this.alertManager) {
+        try {
+          this.alertManager.evaluateRules(aggregated);
+        } catch (e) {
+          console.error('Alert evaluation error:', e.message);
+        }
+      }
     } finally {
       this.isRefreshing = false;
     }

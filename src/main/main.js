@@ -2,12 +2,14 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const Database = require('./db');
 const Aggregator = require('./aggregator');
+const AlertManager = require('./alert-manager');
 
 class TaskDashboardApp {
   constructor() {
     this.mainWindow = null;
     this.db = null;
     this.aggregator = null;
+    this.alertManager = null;
     this.init();
   }
 
@@ -15,7 +17,8 @@ class TaskDashboardApp {
     app.whenReady().then(() => {
       this.db = new Database();
       this.db.init();
-      this.aggregator = new Aggregator(this.db, this);
+      this.alertManager = new AlertManager(this.db, this);
+      this.aggregator = new Aggregator(this.db, this, this.alertManager);
       this.createWindow();
       this.registerIPC();
       this.aggregator.start();
@@ -89,6 +92,30 @@ class TaskDashboardApp {
 
     ipcMain.handle('get-aggregator-status', () => {
       return this.aggregator.getStatus();
+    });
+
+    ipcMain.handle('get-alert-rules', () => {
+      return this.db.getAlertRules();
+    });
+
+    ipcMain.handle('add-alert-rule', (event, rule) => {
+      return this.db.addAlertRule(rule);
+    });
+
+    ipcMain.handle('update-alert-rule', (event, id, rule) => {
+      return this.db.updateAlertRule(id, rule);
+    });
+
+    ipcMain.handle('delete-alert-rule', (event, id) => {
+      return this.db.deleteAlertRule(id);
+    });
+
+    ipcMain.handle('get-alert-events', (event, limit = 100) => {
+      return this.db.getAlertEvents(limit);
+    });
+
+    ipcMain.handle('test-alert-notification', (event, ruleData) => {
+      return this.alertManager.testNotification(ruleData || { name: '测试告警' });
     });
   }
 

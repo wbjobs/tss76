@@ -65,6 +65,10 @@ class DashboardRenderer {
     this.filterSource = 'all';
     this.searchQuery = '';
 
+    this.alertRules = [];
+    this.alertEvents = [];
+    this.editingAlertRuleId = null;
+
     this.init();
   }
 
@@ -73,6 +77,7 @@ class DashboardRenderer {
     this.loadInitialData();
     this.setupRealTimeUpdates();
     this.populateSourceTypes();
+    this.loadAlertData();
   }
 
   bindEvents() {
@@ -103,6 +108,20 @@ class DashboardRenderer {
     document.getElementById('sourceType').addEventListener('change', () => this.renderDynamicFields());
     document.getElementById('testConnectionBtn').addEventListener('click', () => this.testConnection());
     document.getElementById('resetFormBtn').addEventListener('click', () => this.resetForm());
+
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+      tab.addEventListener('click', (e) => this.switchSidebarTab(e.currentTarget.dataset.tab));
+    });
+
+    document.getElementById('addAlertRuleBtn').addEventListener('click', () => this.openAlertRuleModal());
+    document.getElementById('refreshEventsBtn').addEventListener('click', () => this.loadAlertEvents());
+    document.getElementById('closeAlertRuleModal').addEventListener('click', () => this.closeAlertRuleModal());
+    document.getElementById('alertRuleModal').addEventListener('click', (e) => {
+      if (e.target.id === 'alertRuleModal') this.closeAlertRuleModal();
+    });
+    document.getElementById('alertRuleForm').addEventListener('submit', (e) => this.handleAlertRuleSubmit(e));
+    document.getElementById('resetAlertRuleBtn').addEventListener('click', () => this.resetAlertRuleForm());
+    document.getElementById('testAlertNotifBtn').addEventListener('click', () => this.testAlertNotification());
   }
 
   populateSourceTypes() {
@@ -130,6 +149,9 @@ class DashboardRenderer {
   setupRealTimeUpdates() {
     window.dashboardAPI.onDataUpdated((data) => {
       this.updateData(data);
+    });
+    window.dashboardAPI.onAlertsTriggered((data) => {
+      this.loadAlertEvents();
     });
   }
 
@@ -243,6 +265,19 @@ class DashboardRenderer {
       select.appendChild(opt);
     }
     select.value = currentVal;
+
+    const condSource = document.getElementById('condSourceId');
+    if (condSource) {
+      const condVal = condSource.value;
+      condSource.innerHTML = '<option value="">-- 全部数据源 --</option>';
+      for (const ds of this.dataSources) {
+        const opt = document.createElement('option');
+        opt.value = String(ds.id);
+        opt.textContent = ds.name;
+        condSource.appendChild(opt);
+      }
+      condSource.value = condVal;
+    }
   }
 
   renderTasks() {
@@ -517,6 +552,241 @@ class DashboardRenderer {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  async loadAlertData() {
+    await Promise.all([
+      this.loadAlertRules(),
+      this.loadAlertEvents()
+    ]);
+  }
+
+  async loadAlertRules() {
+    try {
+      this.alertRules = await window.dashboardAPI.getAlertRules();
+      this.renderAlertRules();
+    } catch (e) {
+      console.error('Failed to load alert rules:', e);
+    }
+  }
+
+  async loadAlertEvents() {
+    try {
+      this.alertEvents = await window.dashboardAPI.getAlertEvents(100);
+      this.renderAlertEvents();
+    } catch (e) {
+      console.error('Failed to load alert events:', e);
+    }
+  }
+
+  switchSidebarTab(tab) {
+    document.querySelectorAll('.sidebar-tab').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.sidebar-tab-panel').forEach(p => {
+      p.classList.toggle('active', p.id === `tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`);
+    });
+  }
+
+  renderAlertRules() {
+    const container = document.getElementById('alertRulesList');
+    if (!this.alertRules || this.alertRules.length === 0) {
+      container.innerHTML = '<div class="empty-state empty-sm">暂无告警规则，点击 + 新增</div>';
+      return;
+    }
+
+    const stateLabels = {
+      failed: '失败', warning: '警告', running: '运行中',
+      success: '成功', pending: '等待中'
+    };
+
+    container.innerHTML = this.alertRules.map(rule => {
+      const cond = rule.condition || {};
+      const chips = [];
+      if (cond.state) chips.push(`<span class="chip">状态: ${stateLabels[cond.state] || cond.state}</span>`);
+      if (cond.sourceId) {
+        const ds = this.dataSources.find(d => String(d.id) === String(cond.sourceId));
+        chips.push(`<span class="chip">数据源: ${this.escapeHtml(ds ? ds.name : cond.sourceId)}</span>`);
+      }
+      if (cond.taskNamePattern) chips.push(`<span class="chip">名称: ${this.escapeHtml(cond.taskNamePattern)}</span>`);
+      if (cond.failureThreshold && Number(cond.failureThreshold) > 1) {
+        chips.push(`<span class="chip">阈值: ${cond.failureThreshold}次</span>`);
+      }
+      if (cond.longRunningMs) chips.push(`<span class="chip">长运行: ${Math.round(cond.longRunningMs/60000)}分钟</span>`);
+
+      const cooldown = rule.cooldownSeconds || 300;
+      const triggered = rule.triggerCount || 0;
+      const last = rule.lastTriggeredAt
+        ? new Date(rule.lastTriggeredAt).toLocaleString('zh-CN')
+        : '-';
+
+      return `
+        <div class="alert-rule-item ${rule.enabled ? '' : 'disabled'}">
+          <div class="alert-rule-header">
+            <span class="alert-rule-name">${this.escapeHtml(rule.name)}${rule.enabled ? '' : ' (已禁用)'}</span>
+            <div class="alert-rule-actions">
+              <button class="btn btn-secondary btn-sm" onclick="dashboard.editAlertRule(${rule.id})">编辑</button>
+              <button class="btn btn-danger btn-sm" onclick="dashboard.deleteAlertRule(${rule.id})">删除</button>
+            </div>
+          </div>
+          <div class="alert-rule-summary">
+            ${chips.length ? chips.join('') : '<span class="chip">无特定条件</span>'}
+          </div>
+          <div class="alert-rule-meta">
+            <span>触发 ${triggered} 次</span>
+            <span>冷却 ${cooldown}s</span>
+            <span title="上次触发">${last}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderAlertEvents() {
+    const container = document.getElementById('alertEventsList');
+    if (!this.alertEvents || this.alertEvents.length === 0) {
+      container.innerHTML = '<div class="empty-state empty-sm">暂无告警记录</div>';
+      return;
+    }
+
+    container.innerHTML = this.alertEvents.map(ev => {
+      const time = ev.created_at ? new Date(ev.created_at).toLocaleString('zh-CN') : '-';
+      return `
+        <div class="alert-event-item">
+          <div class="alert-event-header">
+            <span class="alert-event-rule">${this.escapeHtml(ev.ruleName)}</span>
+            <span class="alert-event-time">${time}</span>
+          </div>
+          <div class="alert-event-message">${this.escapeHtml(ev.message)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  openAlertRuleModal(rule = null) {
+    this.editingAlertRuleId = rule ? rule.id : null;
+    document.getElementById('alertRuleModalTitle').textContent = rule ? '编辑告警规则' : '新增告警规则';
+    document.getElementById('alertRuleId').value = rule ? String(rule.id) : '';
+    document.getElementById('alertTestResult').textContent = '';
+    document.getElementById('alertTestResult').className = 'test-result';
+
+    const cond = (rule && rule.condition) || {};
+    const action = (rule && rule.action) || {};
+
+    document.getElementById('alertRuleName').value = rule ? rule.name : '';
+    document.getElementById('alertRuleEnabled').checked = rule ? rule.enabled : true;
+    document.getElementById('condState').value = cond.state || '';
+    document.getElementById('condSourceId').value = cond.sourceId || '';
+    document.getElementById('condTaskNamePattern').value = cond.taskNamePattern || '';
+    document.getElementById('condFailureThreshold').value = cond.failureThreshold || 1;
+    document.getElementById('condTrackMode').value = cond.trackMode || 'perTask';
+    document.getElementById('condLongRunningMs').value = cond.longRunningMs || '';
+    document.getElementById('cooldownSeconds').value = rule ? (rule.cooldownSeconds ?? 300) : 300;
+    document.getElementById('actionDesktopNotif').checked = action.desktopNotification !== false;
+
+    document.getElementById('alertRuleModal').classList.remove('hidden');
+  }
+
+  closeAlertRuleModal() {
+    document.getElementById('alertRuleModal').classList.add('hidden');
+    this.editingAlertRuleId = null;
+  }
+
+  resetAlertRuleForm() {
+    this.openAlertRuleModal(null);
+  }
+
+  editAlertRule(id) {
+    const rule = this.alertRules.find(r => r.id === id);
+    if (rule) this.openAlertRuleModal(rule);
+  }
+
+  async deleteAlertRule(id) {
+    if (!confirm('确定要删除此告警规则吗？')) return;
+    try {
+      await window.dashboardAPI.deleteAlertRule(id);
+      await this.loadAlertRules();
+    } catch (e) {
+      alert('删除失败: ' + e.message);
+    }
+  }
+
+  collectAlertRuleData() {
+    const cond = {};
+    const state = document.getElementById('condState').value;
+    if (state) cond.state = state;
+
+    const sourceId = document.getElementById('condSourceId').value;
+    if (sourceId) cond.sourceId = sourceId;
+
+    const pattern = document.getElementById('condTaskNamePattern').value.trim();
+    if (pattern) cond.taskNamePattern = pattern;
+
+    const threshold = parseInt(document.getElementById('condFailureThreshold').value, 10);
+    if (threshold > 0) cond.failureThreshold = threshold;
+    cond.trackMode = document.getElementById('condTrackMode').value;
+
+    const longMs = parseInt(document.getElementById('condLongRunningMs').value, 10);
+    if (longMs > 0) cond.longRunningMs = longMs;
+
+    const action = {
+      desktopNotification: document.getElementById('actionDesktopNotif').checked
+    };
+
+    const cooldown = parseInt(document.getElementById('cooldownSeconds').value, 10);
+
+    return {
+      name: document.getElementById('alertRuleName').value.trim(),
+      enabled: document.getElementById('alertRuleEnabled').checked,
+      condition: cond,
+      action,
+      cooldownSeconds: isNaN(cooldown) ? 300 : cooldown
+    };
+  }
+
+  async handleAlertRuleSubmit(e) {
+    e.preventDefault();
+    const data = this.collectAlertRuleData();
+    if (!data.name) {
+      alert('请填写规则名称');
+      return;
+    }
+
+    try {
+      const id = document.getElementById('alertRuleId').value;
+      if (id) {
+        await window.dashboardAPI.updateAlertRule(parseInt(id), data);
+      } else {
+        await window.dashboardAPI.addAlertRule(data);
+      }
+      this.closeAlertRuleModal();
+      await this.loadAlertRules();
+    } catch (e) {
+      alert('保存失败: ' + e.message);
+    }
+  }
+
+  async testAlertNotification() {
+    const data = this.collectAlertRuleData();
+    const resultEl = document.getElementById('alertTestResult');
+    if (!data.name) data.name = '（未命名测试规则）';
+
+    resultEl.className = 'test-result';
+    resultEl.textContent = '正在发送测试通知...';
+
+    try {
+      const result = await window.dashboardAPI.testAlertNotification(data);
+      if (result.success) {
+        resultEl.className = 'test-result success';
+        resultEl.textContent = '✓ 测试通知已发送，请查看系统通知';
+      } else {
+        resultEl.className = 'test-result error';
+        resultEl.textContent = '✗ ' + (result.message || '发送失败');
+      }
+    } catch (e) {
+      resultEl.className = 'test-result error';
+      resultEl.textContent = '✗ ' + e.message;
+    }
   }
 }
 

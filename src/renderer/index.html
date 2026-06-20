@@ -35,62 +35,91 @@
   </header>
 
   <main class="app-main">
-    <section class="stats-section">
-      <div class="stat-card total">
-        <div class="stat-label">总任务数</div>
-        <div class="stat-value" id="statTotal">0</div>
-      </div>
-      <div class="stat-card running">
-        <div class="stat-label">运行中</div>
-        <div class="stat-value" id="statRunning">0</div>
-      </div>
-      <div class="stat-card success">
-        <div class="stat-label">成功</div>
-        <div class="stat-value" id="statSuccess">0</div>
-      </div>
-      <div class="stat-card failed">
-        <div class="stat-label">失败</div>
-        <div class="stat-value" id="statFailed">0</div>
-      </div>
-      <div class="stat-card pending">
-        <div class="stat-label">等待中</div>
-        <div class="stat-value" id="statPending">0</div>
-      </div>
-      <div class="stat-card warning">
-        <div class="stat-label">警告</div>
-        <div class="stat-value" id="statWarning">0</div>
-      </div>
-    </section>
+    <div class="main-content">
+      <section class="stats-section">
+        <div class="stat-card total">
+          <div class="stat-label">总任务数</div>
+          <div class="stat-value" id="statTotal">0</div>
+        </div>
+        <div class="stat-card running">
+          <div class="stat-label">运行中</div>
+          <div class="stat-value" id="statRunning">0</div>
+        </div>
+        <div class="stat-card success">
+          <div class="stat-label">成功</div>
+          <div class="stat-value" id="statSuccess">0</div>
+        </div>
+        <div class="stat-card failed">
+          <div class="stat-label">失败</div>
+          <div class="stat-value" id="statFailed">0</div>
+        </div>
+        <div class="stat-card pending">
+          <div class="stat-label">等待中</div>
+          <div class="stat-value" id="statPending">0</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-label">警告</div>
+          <div class="stat-value" id="statWarning">0</div>
+        </div>
+      </section>
 
-    <section class="sources-section">
-      <h2 class="section-title">数据源状态</h2>
-      <div id="sourcesList" class="sources-list">
-        <div class="empty-state">暂无数据源，请点击右上角"数据源配置"添加</div>
-      </div>
-    </section>
+      <section class="sources-section">
+        <h2 class="section-title">数据源状态</h2>
+        <div id="sourcesList" class="sources-list">
+          <div class="empty-state">暂无数据源，请点击右上角"数据源配置"添加</div>
+        </div>
+      </section>
 
-    <section class="tasks-section">
-      <div class="section-header">
-        <h2 class="section-title">任务列表</h2>
-        <div class="filter-bar">
-          <select id="filterState" class="form-input">
-            <option value="all">全部状态</option>
-            <option value="running">运行中</option>
-            <option value="pending">等待中</option>
-            <option value="success">成功</option>
-            <option value="failed">失败</option>
-            <option value="warning">警告</option>
-          </select>
-          <select id="filterSource" class="form-input">
-            <option value="all">全部数据源</option>
-          </select>
-          <input type="text" id="searchInput" class="form-input" placeholder="搜索任务名...">
+      <section class="tasks-section">
+        <div class="section-header">
+          <h2 class="section-title">任务列表</h2>
+          <div class="filter-bar">
+            <select id="filterState" class="form-input">
+              <option value="all">全部状态</option>
+              <option value="running">运行中</option>
+              <option value="pending">等待中</option>
+              <option value="success">成功</option>
+              <option value="failed">失败</option>
+              <option value="warning">警告</option>
+            </select>
+            <select id="filterSource" class="form-input">
+              <option value="all">全部数据源</option>
+            </select>
+            <input type="text" id="searchInput" class="form-input" placeholder="搜索任务名...">
+          </div>
+        </div>
+        <div id="tasksList" class="tasks-list">
+          <div class="empty-state">暂无任务数据</div>
+        </div>
+      </section>
+    </div>
+
+    <aside class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" data-tab="rules">告警规则</button>
+        <button class="sidebar-tab" data-tab="events">告警记录</button>
+      </div>
+
+      <div id="tabRules" class="sidebar-tab-panel active">
+        <div class="panel-header">
+          <h3 class="sidebar-section-title">告警规则</h3>
+          <button id="addAlertRuleBtn" class="btn btn-primary btn-sm">+ 新增</button>
+        </div>
+        <div id="alertRulesList" class="alert-rules-list">
+          <div class="empty-state empty-sm">暂无告警规则</div>
         </div>
       </div>
-      <div id="tasksList" class="tasks-list">
-        <div class="empty-state">暂无任务数据</div>
+
+      <div id="tabEvents" class="sidebar-tab-panel">
+        <div class="panel-header">
+          <h3 class="sidebar-section-title">告警记录</h3>
+          <button id="refreshEventsBtn" class="btn btn-secondary btn-sm">刷新</button>
+        </div>
+        <div id="alertEventsList" class="alert-events-list">
+          <div class="empty-state empty-sm">暂无告警记录</div>
+        </div>
       </div>
-    </section>
+    </aside>
   </main>
 
   <div id="configModal" class="modal-overlay hidden">
@@ -142,6 +171,103 @@
             </form>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="alertRuleModal" class="modal-overlay hidden">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 id="alertRuleModalTitle">新增告警规则</h2>
+        <button class="modal-close" id="closeAlertRuleModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="alertRuleForm" class="alert-rule-form">
+          <input type="hidden" id="alertRuleId">
+          <div class="form-group">
+            <label>规则名称</label>
+            <input type="text" id="alertRuleName" class="form-input" required placeholder="例如：任务失败告警">
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="alertRuleEnabled" checked>
+              启用此规则
+            </label>
+          </div>
+
+          <div class="form-section-divider">
+            <span>触发条件（满足全部条件时触发）</span>
+          </div>
+
+          <div class="form-group">
+            <label>任务状态</label>
+            <select id="condState" class="form-input">
+              <option value="">-- 任意状态 --</option>
+              <option value="failed">失败</option>
+              <option value="warning">警告</option>
+              <option value="running">运行中</option>
+              <option value="success">成功</option>
+              <option value="pending">等待中</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>数据源</label>
+            <select id="condSourceId" class="form-input">
+              <option value="">-- 全部数据源 --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>任务名称匹配（关键词或正则）</label>
+            <input type="text" id="condTaskNamePattern" class="form-input" placeholder="例如：daily-job 或 .*-etl">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>失败次数阈值</label>
+              <input type="number" id="condFailureThreshold" class="form-input" min="1" value="1" placeholder="1">
+            </div>
+            <div class="form-group">
+              <label>统计方式</label>
+              <select id="condTrackMode" class="form-input">
+                <option value="perTask">按单任务累计</option>
+                <option value="totalAcrossTasks">按匹配总数</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>长运行任务阈值 (毫秒，仅运行中触发)</label>
+            <input type="number" id="condLongRunningMs" class="form-input" placeholder="例如：3600000 = 1小时">
+          </div>
+
+          <div class="form-section-divider">
+            <span>通知设置</span>
+          </div>
+
+          <div class="form-group">
+            <label>冷却时间（秒，同一规则触发后多久内不再重复通知）</label>
+            <input type="number" id="cooldownSeconds" class="form-input" min="0" value="300" placeholder="300">
+          </div>
+
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="actionDesktopNotif" checked>
+              发送系统桌面通知
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" id="testAlertNotifBtn">测试通知</button>
+            <span id="alertTestResult" class="test-result"></span>
+            <div class="form-actions-right">
+              <button type="button" class="btn btn-secondary" id="resetAlertRuleBtn">重置</button>
+              <button type="submit" class="btn btn-primary">保存</button>
+            </div>
+          </div>
+        </form>
       </div>
     </div>
   </div>

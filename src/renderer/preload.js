@@ -18,5 +18,16 @@ contextBridge.exposeInMainWorld('dashboardAPI', {
 
   removeDataUpdatedListener: () => {
     ipcRenderer.removeAllListeners('data-updated');
+  },
+
+  getAlertRules: () => ipcRenderer.invoke('get-alert-rules'),
+  addAlertRule: (rule) => ipcRenderer.invoke('add-alert-rule', rule),
+  updateAlertRule: (id, rule) => ipcRenderer.invoke('update-alert-rule', id, rule),
+  deleteAlertRule: (id) => ipcRenderer.invoke('delete-alert-rule', id),
+  getAlertEvents: (limit) => ipcRenderer.invoke('get-alert-events', limit),
+  testAlertNotification: (ruleData) => ipcRenderer.invoke('test-alert-notification', ruleData),
+
+  onAlertsTriggered: (callback) => {
+    ipcRenderer.on('alerts-triggered', (event, data) => callback(data));
   }
 });

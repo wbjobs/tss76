@@ -166,8 +166,225 @@ body {
 
 .app-main {
   padding: 24px;
-  max-width: 1600px;
+  max-width: 1800px;
   margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.main-content {
+  min-width: 0;
+}
+
+.sidebar {
+  position: sticky;
+  top: 90px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  max-height: calc(100vh - 120px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sidebar-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.sidebar-tab {
+  padding: 12px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  transition: all 0.2s;
+  border-bottom: 2px solid transparent;
+}
+
+.sidebar-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+}
+
+.sidebar-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.sidebar-tab-panel {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  flex-direction: column;
+}
+
+.sidebar-tab-panel.active {
+  display: flex;
+}
+
+.sidebar-section-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.empty-state.empty-sm {
+  padding: 30px 10px;
+  font-size: 12px;
+}
+
+.alert-rules-list,
+.alert-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.alert-rule-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+}
+
+.alert-rule-item.disabled {
+  opacity: 0.55;
+  border-left-color: var(--text-muted);
+}
+
+.alert-rule-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
+.alert-rule-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.alert-rule-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.alert-rule-summary {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.alert-rule-summary .chip {
+  display: inline-block;
+  padding: 1px 6px;
+  margin: 2px 4px 2px 0;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.alert-rule-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.alert-event-item {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--failed);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+.alert-event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.alert-event-rule {
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--failed);
+}
+
+.alert-event-time {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.alert-event-message {
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.modal-sm {
+  width: 560px;
+  max-width: 92vw;
+}
+
+.form-section-divider {
+  margin: 8px 0 14px;
+  border-top: 1px dashed var(--border-color);
+  text-align: center;
+  position: relative;
+}
+
+.form-section-divider span {
+  background: var(--bg-secondary);
+  padding: 0 14px;
+  position: relative;
+  top: -10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.alert-rule-form .form-actions {
+  margin-top: 6px;
+}
+
+@media (max-width: 1200px) {
+  .app-main {
+    grid-template-columns: 1fr;
+  }
+  .sidebar {
+    position: static;
+    max-height: none;
+  }
+  .stats-section {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .stats-section {
